@@ -11,6 +11,7 @@ local function start()
 	elseif ws then
 		while true do
 			-- Request draw from server
+			-- print(bson.encode({type = 'REQUEST_DRAW'}))
 			ws.send(bson.encode({type = 'REQUEST_DRAW'}))
  
 			-- Wait for frame

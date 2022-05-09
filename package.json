@@ -33,6 +33,7 @@
     "palettext": "^1.0.4",
     "serverboy": "^0.0.7",
     "ts-pattern": "^4.0.2",
+    "wasmboy": "^0.7.1",
     "ws": "^8.6.0"
   }
 }
