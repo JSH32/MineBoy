@@ -6,54 +6,29 @@ import { match, P } from 'ts-pattern'
 import { useTry } from 'no-try'
 import ws from 'ws'
 import fs from 'fs'
-import zlib from 'zlib'
-import bmp from 'bmp-js'
 import palettext from 'palettext'
+import { serialize, deserialize } from 'bson'
 
 const app = expressWs(express()).app
-
-app.get('/', (req, res) => {
-	res.send('Hello World!')
-})
-
-// enum ButtonKey {
-//     Right = 'RIGHT',
-//     Left = 'LEFT',
-//     Up = 'UP',
-//     Down = 'DOWN',
-//     A = 'A',
-//     B = 'B',
-//     Select = 'SELECT',
-//     Start = 'START'
-// }
 
 const WIDTH = 160
 const HEIGHT = 144
 
-// Send a socket er
+// Send an error message through socket
 const sendError = (ws: ws, error: string) => 
-	ws.send(JSON.stringify({ type: 'ERROR', error }))
+	ws.send(serialize({ type: 'ERROR', error }))
 
-app.ws('/attach', (ws: ws, req) => {
+app.ws('/attach', (ws: ws) => {
 	const gameboy = new Gameboy()
 	gameboy.loadRom(fs.readFileSync('./roms/Pokemon Crystal.gbc'))
 
-	// ws.on('open', msg => {
-	// 	console.log('Attached')
-	// })
-
-	// ws.on('upgrade', msg => {
-	// 	console.log('upgraded')
-	// })
-
 	const intervalId = setInterval(() => {
-		gameboy.doFrame()
-		gameboy.doFrame()
-		gameboy.doFrame()
+		for (let i = 0; i < 2; i++)
+			gameboy.doFrame()
 	}, 1000 / 60)
 
 	ws.on('message', async (msgString: string) => {
-		const [error, res] = useTry(() => JSON.parse(msgString))
+		const [error, res] = useTry<any>(() => deserialize(Buffer.from(msgString)))
 		if (error) return sendError(ws, 'Invalid data provided')
 
 		match(res)
@@ -64,35 +39,47 @@ app.ws('/attach', (ws: ws, req) => {
 					qtyMax: 16
 				})
 
+				// Must have 16 colors in the palette, even if we don't have 16 colors
+				// We set all leftover colors to black
 				const palette = []
 				for (let i = 0; i < 16; i++)
-					if (colors[i])
-						palette[i] = colors[i].hex.substr(1)
-
-				// We wouldn't need to do this if bmp-js did RGBA and not ABGR 
-				const agbrBuffer = []
-				for (let i = 0; i < screenRgba.length / 4; i++)
-					agbrBuffer.push(
-						screenRgba[i * 4 + 3],
-						screenRgba[i * 4 + 2],
-						screenRgba[i * 4 + 1],
-						screenRgba[i * 4])
+					palette[i] = colors[i] ? colors[i].color : [ 0, 0, 0 ]
 				
-				const oldBuffer = bmp.encode({
-					height: HEIGHT,
-					width: WIDTH,
-					data: agbrBuffer
-				}).data
+				// Clamp all the colors to colors generated in the palette
+				const colorArray = []
+				for (let y = 0; y < HEIGHT; y++) {
+					for (let x = 0; x < WIDTH; x++) {
+						const r = screenRgba[(y * WIDTH + x) * 4]
+						const g = screenRgba[(y * WIDTH + x) * 4 + 1]
+						const b = screenRgba[(y * WIDTH + x) * 4 + 2]
+						let minDistance = Infinity
+						let color = 0
+						
+						// We use colors and not palette here because palette sets unused values to black
+						for (let i = 0; i < colors.length; i++) {
+							const distance = colorDistance(colors[i].color, [r, g, b])
+							if (distance < minDistance) {
+								minDistance = distance
+								color = i
+							}
+						}
+						
+						colorArray.push(color)
+					}
+				}
 
-				zlib.deflate(oldBuffer, (err, buffer) => {
-					if (err) return sendError(ws, 'There was a problem compressing the frame')
-					
-					ws.send(JSON.stringify({
-						type: 'SCREEN_DRAW',
-						screen: buffer.toString('binary'),
-						palette
-					}))
-				})
+				// 4 bit image data
+				const output = Buffer.alloc(colorArray.length / 2)
+				for (let i = 0; i < colorArray.length; i += 2) 
+					output.writeUInt8(colorArray[i] << 4 | colorArray[i+1], i / 2)
+
+				ws.send(serialize({
+					type: 'SCREEN_DRAW',
+					width: WIDTH,
+					height: HEIGHT,
+					screen: output,
+					palette
+				}))
 			})
 			.exhaustive()
 	})
@@ -102,5 +89,8 @@ app.ws('/attach', (ws: ws, req) => {
 		clearInterval(intervalId)
 	})
 })
+
+const colorDistance = (color1: [number, number, number], color2: [number, number, number]) => 
+	Math.pow(color2[0] - color1[0], 2) + Math.pow(color2[1] - color1[1], 2) + Math.pow(color2[2] - color1[2], 2)
 
 app.listen(process.env.PORT, () => console.log(`Listening on http://localhost:${process.env.PORT}`))
