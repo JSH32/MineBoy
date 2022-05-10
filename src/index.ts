@@ -2,15 +2,17 @@ import 'dotenv/config'
 import Gameboy from 'serverboy'
 import express from 'express'
 import expressWs from 'express-ws'
-import { match, P } from 'ts-pattern'
+import { match } from 'ts-pattern'
 import { useTry } from 'no-try'
 import ws from 'ws'
 import fs from 'fs'
-import palettext from 'palettext'
 import { serialize, deserialize } from 'bson'
+import RgbQuant from 'rgbquant'
+import path from 'path'
 
 const app = expressWs(express()).app
 
+// Gameboy resolution
 const WIDTH = 160
 const HEIGHT = 144
 
@@ -22,6 +24,7 @@ app.ws('/attach', (ws: ws) => {
 	const gameboy = new Gameboy()
 	gameboy.loadRom(fs.readFileSync('./roms/Pokemon Crystal.gbc'))
 
+	// 120fps without spamming the eventloop
 	const intervalId = setInterval(() => {
 		for (let i = 0; i < 2; i++)
 			gameboy.doFrame()
@@ -32,53 +35,56 @@ app.ws('/attach', (ws: ws) => {
 		if (error) return sendError(ws, 'Invalid data provided')
 
 		match(res)
-			.with({ type: 'REQUEST_DRAW' }, () => {
+			.with({ type: 'REQUEST_DRAW' }, async () => {
 				const screenRgba = gameboy.getScreen()
-				const colors = palettext(screenRgba, {
-					width: WIDTH,
-					qtyMax: 16
-				})
 
-				// Must have 16 colors in the palette, even if we don't have 16 colors
-				// We set all leftover colors to black
-				const palette = []
+				// Create 16 palette from screen
+				const quant = new RgbQuant({ colors: 16 })
+				quant.sample(screenRgba, WIDTH)
+				const palette = quant.palette(true)
+
+				// Fill all empty palette values with black
 				for (let i = 0; i < 16; i++)
-					palette[i] = colors[i] ? colors[i].color : [ 0, 0, 0 ]
+					palette[i] = palette[i] ? palette[i] : [ 0, 0, 0 ]
+
+				// Reduced frame with color palette
+				const reducedRgba = quant.reduce(screenRgba)
 				
-				// Clamp all the colors to colors generated in the palette
+				// Convert the colors from rgba to palette indexes for smaller size
 				const colorArray = []
 				for (let y = 0; y < HEIGHT; y++) {
 					for (let x = 0; x < WIDTH; x++) {
-						const r = screenRgba[(y * WIDTH + x) * 4]
-						const g = screenRgba[(y * WIDTH + x) * 4 + 1]
-						const b = screenRgba[(y * WIDTH + x) * 4 + 2]
-						let minDistance = Infinity
-						let color = 0
+						const r = reducedRgba[(y * WIDTH + x) * 4]
+						const g = reducedRgba[(y * WIDTH + x) * 4 + 1]
+						const b = reducedRgba[(y * WIDTH + x) * 4 + 2]
 						
-						// We use colors and not palette here because palette sets unused values to black
-						for (let i = 0; i < colors.length; i++) {
-							const distance = colorDistance(colors[i].color, [r, g, b])
-							if (distance < minDistance) {
-								minDistance = distance
-								color = i
+						for (let i = 0; i < palette.length; i++) {
+							if (palette[i][0] === r &&
+								palette[i][1] === g &&
+								palette[i][2] === b) {
+								colorArray.push(i)
+								break
 							}
 						}
-						
-						colorArray.push(color)
 					}
 				}
 
+				// The last line cuts off so we push a line to the end,
+				// most likely imgquant issue on lua side, JackMacWindows is responsible.
+				for (let i = 0; i < WIDTH; i++)
+					colorArray.push(0)
+
 				// 4 bit image data
-				const output = Buffer.alloc(colorArray.length / 2)
+				const output = Buffer.alloc(colorArray.length / 2 + WIDTH / 2)
 				for (let i = 0; i < colorArray.length; i += 2) 
 					output.writeUInt8(colorArray[i] << 4 | colorArray[i+1], i / 2)
 
 				ws.send(serialize({
 					type: 'SCREEN_DRAW',
 					width: WIDTH,
-					height: HEIGHT,
+					height: HEIGHT + 1, // Add one line to compensate for invisible line
 					screen: output,
-					palette
+					palette: palette
 				}))
 			})
 			.exhaustive()
@@ -89,8 +95,5 @@ app.ws('/attach', (ws: ws) => {
 		clearInterval(intervalId)
 	})
 })
-
-const colorDistance = (color1: [number, number, number], color2: [number, number, number]) => 
-	Math.pow(color2[0] - color1[0], 2) + Math.pow(color2[1] - color1[1], 2) + Math.pow(color2[2] - color1[2], 2)
 
 app.listen(process.env.PORT, () => console.log(`Listening on http://localhost:${process.env.PORT}`))
