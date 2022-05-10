@@ -9,6 +9,10 @@ import fs from 'fs'
 import { serialize, deserialize } from 'bson'
 import RgbQuant from 'rgbquant'
 import path from 'path'
+import { Logger } from 'tslog'
+
+// Pretty colors
+new Logger({ name: 'console', overwriteConsole: true })
 
 const app = expressWs(express()).app
 
@@ -19,6 +23,29 @@ const HEIGHT = 144
 // Send an error message through socket
 const sendError = (ws: ws, error: string) => 
 	ws.send(serialize({ type: 'ERROR', error }))
+
+const getGames = (romDir: string): Record<string, Buffer> => {
+	const games = {}
+
+	for (const file of fs.readdirSync(romDir)) {
+		const gameboy = new Gameboy()
+		const gameBuffer = fs.readFileSync(path.join(romDir, file))
+
+		gameboy.loadRom(gameBuffer)
+
+		// Why the fuck is it hidden like this in serverboy
+		games[gameboy[Object.keys(gameboy)[0]].gameboy.name] = gameBuffer
+	}
+
+	return games
+}
+
+// Load games at startup
+const games = getGames(path.join(process.cwd(), 'roms'))
+console.info(`Loaded ${Object.keys(games).length} roms:`, Object.keys(games))
+
+app.get('/listGames', (_, res) => 
+	res.send(serialize(Object.keys(games))))
 
 app.ws('/attach', (ws: ws) => {
 	const gameboy = new Gameboy()
@@ -96,4 +123,4 @@ app.ws('/attach', (ws: ws) => {
 	})
 })
 
-app.listen(process.env.PORT, () => console.log(`Listening on http://localhost:${process.env.PORT}`))
+app.listen(process.env.PORT, () => console.info(`Listening on http://localhost:${process.env.PORT}`))

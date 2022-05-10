@@ -36,6 +36,7 @@
     "rgbquant": "^1.1.2",
     "serverboy": "^0.0.7",
     "ts-pattern": "^4.0.2",
+    "tslog": "^3.3.3",
     "wasmboy": "^0.7.1",
     "ws": "^8.6.0"
   }
