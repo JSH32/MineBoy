@@ -229,7 +229,11 @@ while true do
 
         index = tonumber(query)
         if index then
-            break
+            if index > tableLen(gameList) - 1 then
+                log.error('Invalid input')
+            else
+                break
+            end
         else
             log.error('Input must be a number')
         end
