@@ -31,6 +31,7 @@
     "image-pixels": "^2.2.2",
     "image-q": "^4.0.0",
     "imageboy": "^1.1.1",
+    "nanoid": "^3.3.4",
     "no-try": "^3.1.0",
     "quantize": "^1.0.2",
     "rgbquant": "^1.1.2",

@@ -2,7 +2,7 @@ import 'dotenv/config'
 import Gameboy from 'serverboy'
 import express from 'express'
 import expressWs from 'express-ws'
-import { match } from 'ts-pattern'
+import { match, P } from 'ts-pattern'
 import { useTry } from 'no-try'
 import ws from 'ws'
 import fs from 'fs'
@@ -10,6 +10,7 @@ import { serialize, deserialize } from 'bson'
 import RgbQuant from 'rgbquant'
 import path from 'path'
 import { Logger } from 'tslog'
+import { FixedArray } from './utils'
 
 // Pretty colors
 new Logger({ name: 'console', overwriteConsole: true })
@@ -40,6 +41,62 @@ const getGames = (romDir: string): Record<string, Buffer> => {
 	return games
 }
 
+/**
+ * Quantizes the frame and compresses into a small package
+ * 
+ * @param rgbaBuf RGBA buffer of the frame
+ * @param dimensions width and height of the image
+ * @returns A palette and a 4-bit buffer of index references to the palette.
+ * The returned image has one higher height than provided because of a CC bug.
+ */
+const quantizeFrame = (
+	rgbaBuf: number[], 
+	dimensions: [number, number]
+): [FixedArray<number, 16>, Buffer] => {
+	// Create 16 palette from screen
+	const quant = new RgbQuant({ colors: 16 })
+	quant.sample(rgbaBuf, dimensions[0])
+	const palette = quant.palette(true)
+
+	// Fill all empty palette values with black
+	for (let i = 0; i < 16; i++)
+		palette[i] = palette[i] ? palette[i] : [ 0, 0, 0 ]
+
+	// Reduced frame with color palette
+	const reducedRgba = quant.reduce(rgbaBuf)
+						
+	// Convert the colors from rgba to palette indexes for smaller size
+	const colorArray = []
+	for (let y = 0; y < dimensions[1]; y++) {
+		for (let x = 0; x < dimensions[0]; x++) {
+			const r = reducedRgba[(y * WIDTH + x) * 4]
+			const g = reducedRgba[(y * WIDTH + x) * 4 + 1]
+			const b = reducedRgba[(y * WIDTH + x) * 4 + 2]
+			
+			for (let i = 0; i < palette.length; i++) {
+				if (palette[i][0] === r &&
+					palette[i][1] === g &&
+					palette[i][2] === b) {
+					colorArray.push(i)
+					break
+				}
+			}
+		}
+	}
+
+	// The last line cuts off so we push a line to the end,
+	// most likely imgquant issue on lua side.
+	for (let i = 0; i < dimensions[0]; i++)
+		colorArray.push(0)
+
+	// Compress the indexes to 4-bit buffer
+	const output = Buffer.alloc(colorArray.length / 2)
+	for (let i = 0; i < colorArray.length; i += 2) 
+		output.writeUInt8(colorArray[i] << 4 | colorArray[i+1], i / 2)
+
+	return [ palette, output ]
+}
+
 // Load games at startup
 const games = getGames(path.join(process.cwd(), 'roms'))
 console.info(`Loaded ${Object.keys(games).length} roms:`, Object.keys(games))
@@ -47,79 +104,83 @@ console.info(`Loaded ${Object.keys(games).length} roms:`, Object.keys(games))
 app.get('/listGames', (_, res) => 
 	res.send(serialize(Object.keys(games))))
 
+// Any API that does operations on the gameboy should be completely asynchronous and require a WS session
 app.ws('/attach', (ws: ws) => {
 	const gameboy = new Gameboy()
-	gameboy.loadRom(fs.readFileSync('./roms/Pokemon Crystal.gbc'))
+	const keysPressed = new Map<number, number>()
 
 	// 120fps without spamming the eventloop
-	const intervalId = setInterval(() => {
-		for (let i = 0; i < 2; i++)
-			gameboy.doFrame()
-	}, 1000 / 60)
+	// This is null util a game is running
+	let intervalId = null
 
 	ws.on('message', async (msgString: string) => {
 		const [error, res] = useTry<any>(() => deserialize(Buffer.from(msgString)))
 		if (error) return sendError(ws, 'Invalid data provided')
 
 		match(res)
-			.with({ type: 'REQUEST_DRAW' }, async () => {
-				const screenRgba = gameboy.getScreen()
+			.with({ type: 'SELECT_GAME', index: P.number }, () => {
+				if (res.index > games.length)
+					return sendError(ws, 'Invalid game index selected')
 
-				// Create 16 palette from screen
-				const quant = new RgbQuant({ colors: 16 })
-				quant.sample(screenRgba, WIDTH)
-				const palette = quant.palette(true)
+				const gameName = Object.keys(games)[res.index]
+				gameboy.loadRom(games[gameName])
 
-				// Fill all empty palette values with black
-				for (let i = 0; i < 16; i++)
-					palette[i] = palette[i] ? palette[i] : [ 0, 0, 0 ]
+				if (!intervalId) {
+					intervalId = setInterval(() => {
+						const keysToPress = []
 
-				// Reduced frame with color palette
-				const reducedRgba = quant.reduce(screenRgba)
-				
-				// Convert the colors from rgba to palette indexes for smaller size
-				const colorArray = []
-				for (let y = 0; y < HEIGHT; y++) {
-					for (let x = 0; x < WIDTH; x++) {
-						const r = reducedRgba[(y * WIDTH + x) * 4]
-						const g = reducedRgba[(y * WIDTH + x) * 4 + 1]
-						const b = reducedRgba[(y * WIDTH + x) * 4 + 2]
-						
-						for (let i = 0; i < palette.length; i++) {
-							if (palette[i][0] === r &&
-								palette[i][1] === g &&
-								palette[i][2] === b) {
-								colorArray.push(i)
-								break
+						// For some reason not every keystroke will register the first time so we make it click on three updates
+						for (const [key, count] of keysPressed) {
+							if (count > 0) {
+								keysToPress.push(key)
+								keysPressed.set(key, count - 1)
 							}
 						}
-					}
+
+						gameboy.pressKeys(keysToPress)
+						gameboy.doFrame()
+					}, 1000 / 120)
 				}
 
-				// The last line cuts off so we push a line to the end,
-				// most likely imgquant issue on lua side, JackMacWindows is responsible.
-				for (let i = 0; i < WIDTH; i++)
-					colorArray.push(0)
-
-				// 4 bit image data
-				const output = Buffer.alloc(colorArray.length / 2 + WIDTH / 2)
-				for (let i = 0; i < colorArray.length; i += 2) 
-					output.writeUInt8(colorArray[i] << 4 | colorArray[i+1], i / 2)
-
-				ws.send(serialize({
-					type: 'SCREEN_DRAW',
-					width: WIDTH,
-					height: HEIGHT + 1, // Add one line to compensate for invisible line
-					screen: output,
-					palette: palette
-				}))
+				ws.send(serialize({ type: 'GAME_STARTED', name: gameName }))
 			})
-			.exhaustive()
+			// Handler for other routes which require game to be running
+			.otherwise(() => {
+				if (!intervalId)
+					return sendError(ws, 'No game running')
+					
+				match(res)
+					.with({ type: 'EXIT_GAME' }, () => {
+						clearInterval(intervalId)
+						intervalId = null
+		
+						ws.send(serialize({ type: 'GAME_EXITED' }))
+					})
+					.with({ type: 'GET_SRAM' }, async () => {
+						ws.send(serialize({ type: 'SAVE_DATA', data: gameboy.getSaveData() }))
+					})
+					.with({ type: 'PRESS_BUTTON', button: P.string }, () => {
+						keysPressed.set(Gameboy.KEYMAP[res.button], 3)
+					})
+					.with({ type: 'REQUEST_DRAW' }, async () => {
+						const [palette, output] = quantizeFrame(gameboy.getScreen(), [WIDTH, HEIGHT])
+		
+						ws.send(serialize({
+							type: 'SCREEN_DRAW',
+							width: WIDTH,
+							height: HEIGHT + 1, // Add one line to compensate for invisible line
+							screen: output,
+							palette: palette
+						}))
+					})
+					.exhaustive()
+			})
 	})
 
 	ws.on('close', () => {
-		console.log('WebSocket was closed')
-		clearInterval(intervalId)
+		console.info('WebSocket was closed')
+		if (intervalId)
+			clearInterval(intervalId)
 	})
 })
 
