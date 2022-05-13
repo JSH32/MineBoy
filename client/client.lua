@@ -7,13 +7,18 @@ monitor.setTextScale(0.5)
 
 local controlMonitor = peripheral.wrap(config.controlMonitor.monitorId)
 
+local diskDrive
+if config.diskDrive ~= nil or config.diskDrive ~= '' then
+    diskDrive = peripheral.wrap(config.diskDrive)
+end
+
 -- Pretty color logging
 local log = {
     rawLog = function(color, text, message)
         term.setTextColor(color)
         write('[' .. text .. '] ')
-        term.setTextColor(colors.gray)
-        write(message .. '\n')
+        term.setTextColor(colors.lightGray)
+        print(message)
     end
 }
 
@@ -28,7 +33,7 @@ log.warn = function(message)
 end
 log.query = function(message)
     log.rawLog(colors.green, "QUERY", message)
-    term.setTextColor(colors.gray)
+    term.setTextColor(colors.lightGray)
     write('> ')
     term.setTextColor(colors.white)
     return read()
@@ -113,7 +118,7 @@ local buttons = {
 
 function buttons:render()
     if controlMonitor then
-        term.redirect(controlMonitor)
+        local oldTerm = term.redirect(controlMonitor)
         term.setBackgroundColor(colors[config.controlMonitor.backgroundColor])
         term.clear()
         for _, button in ipairs(self) do
@@ -123,8 +128,12 @@ function buttons:render()
                 button.x + button.width,
                 button.y + button.height,
                 colors[config.controlMonitor.foregroundColor])
+
+            term.setCursorPos(button.x + 0.5, button.y + 0.5)
+            term.setTextColor(colors.black)
+            term.write(button.button)
         end
-        term.redirect(term.native())
+        term.redirect(oldTerm)
     end
 end
 
@@ -207,6 +216,27 @@ local function gameLoop()
                     log.info('Game session was terminated')
                     return
                 end
+
+                if character == keys.s and diskDrive then
+                    if diskDrive.isDiskPresent() then
+                        ws.send(bson.encode({
+                            type = 'GET_SAVE'
+                        }))
+
+                        while true do
+                            local res = bson.decode(ws.receive())
+                            if res.type == 'SAVE_DATA' then
+                                local savePath = diskDrive.getMountPath() .. '/mineboy/' .. res.gameName
+                                local handle = fs.open(savePath, 'w')
+                                handle.write(res.data)
+                                handle.close()
+                                log.info('Saved SRAM to: ' .. savePath)
+                                break
+                            end
+                        end
+                        break -- Might have skipped events here since we nest the WS
+                    end
+                end
             end
         end
     end
@@ -239,14 +269,24 @@ while true do
         end
     end
 
+    local saveData
+    if diskDrive.isDiskPresent() then
+        local savePath = diskDrive.getMountPath() .. '/mineboy/' .. gameList[tostring(index)]
+        if fs.exists(savePath) then
+            local handle = fs.open(savePath, 'r')
+            saveData = handle.readAll()
+            handle.close()
+        end
+    end
+
     ws.send(bson.encode({
         type = 'SELECT_GAME',
-        index = index
+        index = index,
+        save = saveData
     }))
 
-    local res = bson.decode(ws.receive())
-    log.info('Started game: ' .. res.name)
-    log.info('Press \'X\' to exit the game')
+    log.info('Started game: ' .. bson.decode(ws.receive()).name)
+    log.info('Press \'X\' to exit the game' .. (diskDrive and ', Press \'S\' to save SRAM to disk' or ''))
 
     buttons:render()
     gameLoop()

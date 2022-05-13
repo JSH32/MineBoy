@@ -11,6 +11,8 @@ import RgbQuant from 'rgbquant'
 import path from 'path'
 import { Logger } from 'tslog'
 import { FixedArray } from './utils'
+import zlib from 'zlib'
+import { promisify } from 'util'
 
 // Pretty colors
 new Logger({ name: 'console', overwriteConsole: true })
@@ -108,6 +110,7 @@ app.get('/listGames', (_, res) =>
 app.ws('/attach', (ws: ws) => {
 	const gameboy = new Gameboy()
 	const keysPressed = new Map<number, number>()
+	let gameName = null
 
 	// 120fps without spamming the eventloop
 	// This is null util a game is running
@@ -118,12 +121,13 @@ app.ws('/attach', (ws: ws) => {
 		if (error) return sendError(ws, 'Invalid data provided')
 
 		match(res)
-			.with({ type: 'SELECT_GAME', index: P.number }, () => {
+			.with({ type: 'SELECT_GAME', index: P.number, save: P.optional(P.any) }, async () => {
 				if (res.index > games.length)
 					return sendError(ws, 'Invalid game index selected')
 
-				const gameName = Object.keys(games)[res.index]
-				gameboy.loadRom(games[gameName])
+				const saveData = res.save ? await promisify(zlib.inflate)(Buffer.from(res.save, 'base64')) : undefined
+				gameName = Object.keys(games)[res.index]
+				gameboy.loadRom(games[gameName], saveData)
 
 				if (!intervalId) {
 					intervalId = setInterval(() => {
@@ -156,8 +160,15 @@ app.ws('/attach', (ws: ws) => {
 		
 						ws.send(serialize({ type: 'GAME_EXITED' }))
 					})
-					.with({ type: 'GET_SRAM' }, async () => {
-						ws.send(serialize({ type: 'SAVE_DATA', data: gameboy.getSaveData() }))
+					.with({ type: 'GET_SAVE' }, () => {
+						// Compress save due to limited disk storage
+						zlib.deflate(Buffer.from(gameboy.getSaveData()), (_, buffer) => {
+							ws.send(serialize({ 
+								type: 'SAVE_DATA',
+								gameName,
+								data: buffer.toString('base64')
+							}))
+						})
 					})
 					.with({ type: 'PRESS_BUTTON', button: P.string }, () => {
 						keysPressed.set(Gameboy.KEYMAP[res.button], 3)
