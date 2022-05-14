@@ -59,67 +59,94 @@ end
 -- Controller button map
 local buttons = {
     {
-        x = 2,
+        x = 3,
         y = 5,
         height = 2,
-        width = 3,
-        button = 'LEFT'
+        width = 2,
+        button = 'LEFT',
+        display = '\x1B',
+        colors = config.controlMonitor.colors.dpad
     },
     {
-        x = 10,
+        x = 9,
         y = 5,
         height = 2,
-        width = 3,
-        button = 'RIGHT'
+        width = 2,
+        button = 'RIGHT',
+        display = '\x1A',
+        colors = config.controlMonitor.colors.dpad
     },
     {
         x = 6,
         y = 2,
         height = 2,
-        width = 3,
-        button = 'UP'
+        width = 2,
+        button = 'UP',
+        display = '\x18',
+        colors = config.controlMonitor.colors.dpad
+    },
+    -- Square in the middle so it doesn't look stupid
+    {
+        x = 6,
+        y = 5,
+        height = 2,
+        width = 2,
+        colors = config.controlMonitor.colors.dpad
     },
     {
         x = 6,
         y = 8,
         height = 2,
-        width = 3,
-        button = 'DOWN'
+        width = 2,
+        button = 'DOWN',
+        display = '\x19',
+        colors = config.controlMonitor.colors.dpad
     },
     {
         x = 35,
         y = 4,
         height = 2,
-        width = 3,
-        button = 'A'
+        width = 2,
+        button = 'A',
+        colors = config.controlMonitor.colors.ab
     },
     {
         x = 30,
         y = 6,
         height = 2,
-        width = 3,
-        button = 'B'
+        width = 2,
+        button = 'B',
+        bg = config.controlMonitor.colors.abBg,
+        colors = config.controlMonitor.colors.ab
     },
     {
-        x = 15,
-        y = 10,
-        height = 1,
+        x = 15.25,
+        y = 11,
+        height = 0.25,
         width = 5,
-        button = 'SELECT'
+        button = 'SELECT',
+        colors = config.controlMonitor.colors.startSelect
     },
     {
-        x = 22,
-        y = 10,
-        height = 1,
-        width = 5,
-        button = 'START'
+        x = 22.25,
+        y = 11,
+        height = 0.25,
+        width = 4.5,
+        button = 'START',
+        colors = config.controlMonitor.colors.startSelect
     }
 }
+
+local function centerWrite(text, topX, topY, bottomX, bottomY)
+    term.setCursorPos(topX + math.ceil((bottomX - topX) / 2 - (text:len() / 2)), topY + math.ceil(bottomY - topY) / 2)
+    term.write(text)
+end
 
 function buttons:render()
     if controlMonitor then
         local oldTerm = term.redirect(controlMonitor)
-        term.setBackgroundColor(colors[config.controlMonitor.backgroundColor])
+        term.setBackgroundColor(colors[config.controlMonitor.colors.bg])
+        term.setCursorBlink(false)
         term.clear()
         for _, button in ipairs(self) do
             paintutils.drawFilledBox(
@@ -127,11 +154,17 @@ function buttons:render()
                 button.y,
                 button.x + button.width,
                 button.y + button.height,
-                colors[config.controlMonitor.foregroundColor])
+                colors[button.colors.bg])
 
-            term.setCursorPos(button.x + 0.5, button.y + 0.5)
-            term.setTextColor(colors.black)
-            term.write(button.button)
+            local text = button.display or button.button
+            if text then
+                term.setTextColor(colors[button.colors.fg])
+                centerWrite(text,
+                    button.x, 
+                    button.y,
+                    button.x + button.width,
+                    button.y + button.height)
+            end
         end
         term.redirect(oldTerm)
     end
@@ -282,7 +315,8 @@ while true do
     ws.send(bson.encode({
         type = 'SELECT_GAME',
         index = index,
-        save = saveData
+        -- Don't send an empty save
+        save = saveData == '' and nil or saveData
     }))
 
     log.info('Started game: ' .. bson.decode(ws.receive()).name)
