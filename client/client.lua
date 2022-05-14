@@ -316,8 +316,8 @@ while true do
         type = 'SELECT_GAME',
         index = index,
         -- Don't send an empty save
-        save = saveData == '' and nil or saveData
-    }))
+        save = saveData
+    }), true)
 
     log.info('Started game: ' .. bson.decode(ws.receive()).name)
     log.info('Press \'X\' to exit the game' .. (diskDrive and ', Press \'S\' to save SRAM to disk' or ''))

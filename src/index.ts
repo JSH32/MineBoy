@@ -184,7 +184,7 @@ app.ws('/attach', (ws: ws) => {
 							palette: palette
 						}))
 					})
-					.exhaustive()
+					.otherwise(() => console.warn('Caught invalid request:', res))
 			})
 	})
 
