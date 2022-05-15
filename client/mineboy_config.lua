@@ -3,8 +3,10 @@ return {
 	wsUrl = 'ws://localhost:3000',
 	screenMonitor = '',
 	diskDrive = '', -- this can be nothing if you don't want save files
+	rednet = false, -- remote controller functionality, requires wireless modem
 	controlMonitor = {
-		monitorId = '', -- this says Id but it can be directional
+		monitor = '', -- this can be blank if you don't want a gamepad
+
 		-- Colors of the controller, this is set to the basic black/red/white scheme
 		colors = {
 			bg = 'gray',

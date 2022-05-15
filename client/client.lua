@@ -2,16 +2,6 @@ local imgquant = require 'imgquant'
 local bson = require 'bson'
 local config = require 'mineboy_config'
 
-local monitor = peripheral.wrap(config.screenMonitor)
-monitor.setTextScale(0.5)
-
-local controlMonitor = peripheral.wrap(config.controlMonitor.monitorId)
-
-local diskDrive
-if config.diskDrive ~= nil or config.diskDrive ~= '' then
-    diskDrive = peripheral.wrap(config.diskDrive)
-end
-
 -- Pretty color logging
 local log = {
     rawLog = function(color, text, message)
@@ -37,6 +27,30 @@ log.query = function(message)
     write('> ')
     term.setTextColor(colors.white)
     return read()
+end
+
+-- Rednet for remote input
+if config.rednet then
+    local modem = peripheral.find("modem")
+    if modem then
+        rednet.open(peripheral.getName(modem))
+        log.info('Rednet opened on id: ' .. os.getComputerID())
+    else
+        log.warn('No modem was found, rednet was not enabled!')
+    end
+end
+
+local monitor = peripheral.wrap(config.screenMonitor)
+monitor.setTextScale(0.5)
+
+local controlMonitor
+if config.controlMonitor.monitor ~= '' then
+    controlMonitor = peripheral.wrap(config.controlMonitor.monitor)
+end
+
+local diskDrive
+if config.diskDrive ~= nil or config.diskDrive ~= '' then
+    diskDrive = peripheral.wrap(config.diskDrive)
 end
 
 -- Length of a table regardless of what the indexes are
@@ -214,7 +228,7 @@ local function gameLoop()
 
         -- Wait for frame
         while true do
-            local event = {os.pullEvent()}
+            local event = { os.pullEvent() }
 
             if event[1] == 'websocket_message' then
                 local message = bson.decode(event[3])
@@ -269,6 +283,14 @@ local function gameLoop()
                         end
                         break -- Might have skipped events here since we nest the WS
                     end
+                end
+            elseif event[1] == 'rednet_message' then
+                -- Protocol must be 'mineboy_input'
+                if event[4] == 'mineboy_input' then
+                    ws.send(bson.encode({
+                        type = 'PRESS_BUTTON',
+                        button = event[3]
+                    }))
                 end
             end
         end

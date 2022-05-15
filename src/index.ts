@@ -171,7 +171,7 @@ app.ws('/attach', (ws: ws) => {
 						})
 					})
 					.with({ type: 'PRESS_BUTTON', button: P.string }, () => {
-						keysPressed.set(Gameboy.KEYMAP[res.button], 3)
+						keysPressed.set(Gameboy.KEYMAP[res.button], 10)
 					})
 					.with({ type: 'REQUEST_DRAW' }, async () => {
 						const [palette, output] = quantizeFrame(gameboy.getScreen(), [WIDTH, HEIGHT])
