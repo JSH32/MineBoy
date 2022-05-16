@@ -5,25 +5,29 @@ local pretty = require "cc.pretty"
 
 -- Pretty color logging
 local log = {
-    rawLog = function(color, text, message)
+    rawLog = function(color, text, message, useWrite)
         term.setTextColor(color)
         write('[' .. text .. '] ')
         term.setTextColor(colors.lightGray)
-        print(message)
+        if useWrite then
+            write(message)
+        else
+            print(message)
+        end
     end
 }
 
-log.info = function(message)
-    log.rawLog(colors.blue, "INFO", message)
+log.info = function(message, useWrite)
+    log.rawLog(colors.blue, "INFO", message, useWrite)
 end
-log.error = function(message)
-    log.rawLog(colors.red, "ERROR", message)
+log.error = function(message, useWrite)
+    log.rawLog(colors.red, "ERROR", message, useWrite)
 end
-log.warn = function(message)
-    log.rawLog(colors.yellow, "WARN", message)
+log.warn = function(message, useWrite)
+    log.rawLog(colors.yellow, "WARN", message, useWrite)
 end
-log.query = function(message)
-    log.rawLog(colors.green, "QUERY", message)
+log.query = function(message, useWrite)
+    log.rawLog(colors.green, "QUERY", message, useWrite)
     term.setTextColor(colors.lightGray)
     write('> ')
     term.setTextColor(colors.white)
@@ -302,7 +306,8 @@ while true do
     --- Select a game and send a query to play the game
     log.info('Getting games list from server')
     local gameList = bson.decode(http.get(config.httpUrl .. '/listGames').readAll())
-    log.info('Retrieved ' .. tableLen(gameList) .. ' games: ' .. pretty.print(gameList))
+    log.info('Retrieved ' .. tableLen(gameList) .. ' games: ', true)
+    pretty.pretty_print(gameList)
 
     local index
     while true do
