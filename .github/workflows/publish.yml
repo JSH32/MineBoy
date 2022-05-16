@@ -20,6 +20,5 @@ jobs:
 
     - name: Build docker image
       run: |
-        docker build . --tag ghcr.io/jonashackt/hello-world:latest
-        docker run ghcr.io/jonashackt/hello-world:latest
-        docker push ghcr.io/jonashackt/hello-world:latest
+        docker build . --tag ghcr.io/jsh32/mineboy:latest
+        docker push ghcr.io/jsh32/mineboy:latest

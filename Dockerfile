@@ -8,4 +8,4 @@ COPY . .
 RUN npm run build
 CMD [ "node", "dist/index.js" ]
 
-LABEL org.opencontainers.image.source="https://github.com/JSH32/Mineboy"
+LABEL org.opencontainers.image.source="https://github.com/jsh32/mineboy"
