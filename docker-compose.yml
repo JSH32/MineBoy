@@ -1,0 +1,8 @@
+version: '3'
+services:
+  mineboy:
+    build: .
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - ./roms:/usr/src/app/roms

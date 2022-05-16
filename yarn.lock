@@ -1485,6 +1485,18 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
+luamin@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/luamin/-/luamin-1.0.4.tgz#944529b58fc6fa4d31eace2e0353d41210f0e3d3"
+  integrity sha1-lEUptY/G+k0x6s4uA1PUEhDw49M=
+  dependencies:
+    luaparse "^0.2.1"
+
+luaparse@^0.2.1:
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/luaparse/-/luaparse-0.2.1.tgz#aa8f56132b0de97d37f3c991a9df42e0e17f656c"
+  integrity sha1-qo9WEysN6X0388mRqd9C4OF/ZWw=
+
 make-dir@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/make-dir/-/make-dir-3.1.0.tgz#415e967046b3a7f1d185277d84aa58203726a13f"
@@ -2197,11 +2209,6 @@ ts-pattern@^4.0.2:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/ts-pattern/-/ts-pattern-4.0.2.tgz#b36afdb2de1ec0224539dcb7cea3a57c41453b9f"
   integrity sha512-eHqR/7A6fcw05vCOfnL6RwgGJbVi9G/YHTdYdjYmElhDdJ1SMn7pWs+6+YuxygaFwQS/g+cIDlu+UD8IVpur1A==
-
-tsc@^2.0.4:
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/tsc/-/tsc-2.0.4.tgz#5f6499146abea5dca4420b451fa4f2f9345238f5"
-  integrity sha512-fzoSieZI5KKJVBYGvwbVZs/J5za84f2lSTLPYf6AGiIf43tZ3GNrI1QzTLcjtyDDP4aLxd46RTZq1nQxe7+k5Q==
 
 tslib@^1.8.1:
   version "1.14.1"
