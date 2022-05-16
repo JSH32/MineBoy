@@ -17,7 +17,8 @@ import { promisify } from 'util'
 // Pretty colors
 new Logger({ name: 'console', overwriteConsole: true })
 
-const app = expressWs(express()).app
+const wsInstance = expressWs(express())
+const app = wsInstance.app
 
 // Gameboy resolution
 const WIDTH = 160
@@ -108,6 +109,8 @@ app.get('/listGames', (_, res) =>
 
 // Any API that does operations on the gameboy should be completely asynchronous and require a WS session
 app.ws('/attach', (ws: ws) => {
+	console.info(`Client connected (${wsInstance.getWss().clients.size} online)`)
+	
 	const gameboy = new Gameboy()
 	const keysPressed = new Map<number, number>()
 	let gameName = null
@@ -189,7 +192,7 @@ app.ws('/attach', (ws: ws) => {
 	})
 
 	ws.on('close', () => {
-		console.info('WebSocket was closed')
+		console.info(`Client disconnected (${wsInstance.getWss().clients.size} online)`)
 		if (intervalId)
 			clearInterval(intervalId)
 	})
