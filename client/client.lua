@@ -1,6 +1,7 @@
 local imgquant = require 'imgquant'
 local bson = require 'bson'
 local config = require 'mineboy_config'
+local pretty = require "cc.pretty"
 
 -- Pretty color logging
 local log = {
@@ -301,7 +302,7 @@ while true do
     --- Select a game and send a query to play the game
     log.info('Getting games list from server')
     local gameList = bson.decode(http.get(config.httpUrl .. '/listGames').readAll())
-    log.info('Retrieved ' .. tableLen(gameList) .. ' games: ' .. textutils.serialize(gameList))
+    log.info('Retrieved ' .. tableLen(gameList) .. ' games: ' .. pretty.print(gameList))
 
     local index
     while true do

@@ -1,3 +1,5 @@
+local pretty = require "cc.pretty"
+
 -- Key map, the left side is the keys you press on keyboard.
 -- These can be changed to any keys on this list https://computercraft.info/wiki/Keys_(API)
 local keyMap = {
@@ -52,7 +54,7 @@ local function showUi()
 	term.setTextColor(colors.cyan)
 	write('Key Map: ')
 	term.setTextColor(colors.lightGray)
-	print(textutils.serialize(keyMapReadable))
+	pretty.pretty_print(keyMapReadable)
 
 	term.setBackgroundColor(colors.cyan)
 	local w, h = term.getSize()
