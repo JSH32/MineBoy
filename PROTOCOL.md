@@ -136,10 +136,10 @@ This connection is initiated as a websocket by [`attach`](#get-attach).
 		[ 0, 0, 0 ], [ 0, 0, 0 ], [ 0, 0, 0 ], [ 0, 0, 0 ],
 		[ 0, 0, 0 ], [ 0, 0, 0 ], [ 0, 0, 0 ], [ 0, 0, 0 ],
 	],
-	// Buffer of indexes corresponding to palette color.
+	// Screen buffer of indexes corresponding to palette color.
 	// This is a buffer of size (height * width / 2).
 	// Each value in the buffer is an 8 bit number that stores two 4 bit indexes from 0-16.
-	"output": []
+	"screen": []
 }
 ```
 
