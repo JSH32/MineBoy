@@ -1,11 +1,18 @@
 return {
+	-- HTTP Server URL.
 	httpUrl = 'http://localhost:3000',
+	-- Socket Server URL.
 	wsUrl = 'ws://localhost:3000',
 	screenMonitor = '',
-	diskDrive = '', -- this can be nothing if you don't want save files
-	rednet = false, -- remote controller functionality, requires wireless modem
+	-- Disk drive ID or orientation for save files.
+	-- Saves are automatically loaded but not saved, you must press "s" in the terminal to copy save files.
+	diskDrive = '',
+	-- Remote controller functionality, requires wireless modem.
+	rednet = false,
 	controlMonitor = {
-		monitor = '', -- this can be blank if you don't want a gamepad
+		-- Monitor ID or orientation for gamepad.
+		-- This can be blank if you don't want a gamepad.
+		monitor = '',
 
 		-- Colors of the controller, this is set to the basic black/red/white scheme
 		colors = {

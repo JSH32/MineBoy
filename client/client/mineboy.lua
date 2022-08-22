@@ -1,7 +1,7 @@
-local imgquant = require 'imgquant'
-local bson = require 'bson'
+local imgquant = require 'mineboy_deps/imgquant'
+local bson = require 'mineboy_deps/bson'
 local config = require 'mineboy_config'
-local pretty = require "cc.pretty"
+local pretty = require 'cc.pretty'
 
 -- Pretty color logging
 local log = {
@@ -18,20 +18,25 @@ local log = {
 }
 
 log.info = function(message, useWrite)
-    log.rawLog(colors.blue, "INFO", message, useWrite)
+    log.rawLog(colors.blue, 'INFO', message, useWrite)
 end
 log.error = function(message, useWrite)
-    log.rawLog(colors.red, "ERROR", message, useWrite)
+    log.rawLog(colors.red, 'ERROR', message, useWrite)
 end
 log.warn = function(message, useWrite)
-    log.rawLog(colors.yellow, "WARN", message, useWrite)
+    log.rawLog(colors.yellow, 'WARN', message, useWrite)
 end
 log.query = function(message, useWrite)
-    log.rawLog(colors.green, "QUERY", message, useWrite)
+    log.rawLog(colors.green, 'QUERY', message, useWrite)
     term.setTextColor(colors.lightGray)
     write('> ')
     term.setTextColor(colors.white)
     return read()
+end
+
+local function centerWrite(text, topX, topY, bottomX, bottomY)
+    term.setCursorPos(topX + math.ceil((bottomX - topX) / 2 - (text:len() / 2)), topY + math.ceil(bottomY - topY) / 2)
+    term.write(text)
 end
 
 -- Rednet for remote input
@@ -156,11 +161,6 @@ local buttons = {
     }
 }
 
-local function centerWrite(text, topX, topY, bottomX, bottomY)
-    term.setCursorPos(topX + math.ceil((bottomX - topX) / 2 - (text:len() / 2)), topY + math.ceil(bottomY - topY) / 2)
-    term.write(text)
-end
-
 function buttons:render()
     if controlMonitor then
         local oldTerm = term.redirect(controlMonitor)
@@ -169,7 +169,7 @@ function buttons:render()
         term.clear()
         for _, button in ipairs(self) do
             paintutils.drawFilledBox(
-                button.x, 
+                button.x,
                 button.y,
                 button.x + button.width,
                 button.y + button.height,
@@ -179,7 +179,7 @@ function buttons:render()
             if text then
                 term.setTextColor(colors[button.colors.fg])
                 centerWrite(text,
-                    button.x, 
+                    button.x,
                     button.y,
                     button.x + button.width,
                     button.y + button.height)
