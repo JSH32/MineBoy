@@ -30,7 +30,7 @@ This connection is initiated as a websocket by [`attach`](#get-attach).
 {
 	"type": "SELECT_GAME",
 	"index": 0, // Index from listGames
-	"save": [] // Binary save data 
+	"save": [] // Zlib compressed save data retrieved by GET_SAVE.
 }
 ```
 
