@@ -40,8 +40,8 @@ export const quantizeFrame = (
 
             for (let i = 0; i < palette.length; i++) {
                 if (palette[i][0] === r &&
-        palette[i][1] === g &&
-        palette[i][2] === b) {
+                    palette[i][1] === g &&
+                    palette[i][2] === b) {
                     colorArray.push(i);
                     break;
                 }
