@@ -10,29 +10,24 @@
     "dev": "npx ts-node src/index.ts"
   },
   "devDependencies": {
-    "@types/express": "^4.17.13",
-    "@types/express-ws": "^3.0.1",
     "@types/node": "^17.0.31",
     "@types/ws": "^8.5.3",
     "@typescript-eslint/eslint-plugin": "^5.22.0",
     "@typescript-eslint/parser": "^5.22.0",
     "eslint": "^8.15.0",
-    "eslint-config-airbnb": "^19.0.4",
-    "eslint-config-airbnb-typescript": "^17.0.0",
     "eslint-config-eslint": "^7.0.0",
     "typescript": "^4.6.4"
   },
   "dependencies": {
+    "@fastify/websocket": "^7.0.0",
     "bson": "^4.6.3",
     "dotenv": "^16.0.0",
-    "express": "^4.18.1",
-    "express-ws": "^5.0.2",
+    "fastify": "^4.5.2",
     "no-try": "^3.1.0",
     "rgbquant": "^1.1.2",
     "serverboy": "^0.0.7",
     "ts-pattern": "^4.0.2",
     "tslog": "^3.3.3",
-    "wasmboy": "^0.7.1",
     "ws": "^8.6.0"
   }
 }
