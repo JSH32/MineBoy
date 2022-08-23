@@ -5,18 +5,17 @@ import { useTry } from "no-try";
 import ws from "ws";
 import fs from "fs";
 import { serialize, deserialize } from "bson";
-import RgbQuant from "rgbquant";
 import path from "path";
 import { Logger } from "tslog";
-import { FixedArray } from "./utils";
+import { quantizeFrame } from "./utils";
 import zlib from "zlib";
 import { promisify } from "util";
 
-import Fastify from 'fastify';
-import FastifyWebsocket from '@fastify/websocket';
+import Fastify from "fastify";
+import FastifyWebsocket from "@fastify/websocket";
 
 const fastify = Fastify();
-fastify.register(FastifyWebsocket)
+fastify.register(FastifyWebsocket);
 
 // Pretty colors
 new Logger({ name: "console", overwriteConsole: true });
@@ -45,62 +44,6 @@ const getGames = (romDir: string): Record<string, Buffer> => {
     return games;
 };
 
-/**
- * Quantizes the frame and compresses into a small package
- *
- * @param rgbaBuf RGBA buffer of the frame
- * @param dimensions width and height of the image
- * @returns A palette and a 4-bit buffer of index references to the palette.
- * The returned image has one higher height than provided because of a imgquant bug.
- */
-const quantizeFrame = (
-    rgbaBuf: number[],
-    dimensions: [number, number]
-): [FixedArray<number, 16>, Buffer] => {
-    // Create 16 palette from screen
-    const quant = new RgbQuant({ colors: 16 });
-    quant.sample(rgbaBuf, dimensions[0]);
-    const palette = quant.palette(true);
-
-    // Fill all empty palette values with black
-    for (let i = 0; i < 16; i++)
-        palette[i] = palette[i] ? palette[i] : [ 0, 0, 0 ];
-
-    // Reduced frame with color palette
-    const reducedRgba = quant.reduce(rgbaBuf);
-
-    // Convert the colors from rgba to palette indexes for smaller size
-    const colorArray = [];
-    for (let y = 0; y < dimensions[1]; y++) {
-        for (let x = 0; x < dimensions[0]; x++) {
-            const r = reducedRgba[(y * WIDTH + x) * 4];
-            const g = reducedRgba[(y * WIDTH + x) * 4 + 1];
-            const b = reducedRgba[(y * WIDTH + x) * 4 + 2];
-
-            for (let i = 0; i < palette.length; i++) {
-                if (palette[i][0] === r &&
-					palette[i][1] === g &&
-					palette[i][2] === b) {
-                    colorArray.push(i);
-                    break;
-                }
-            }
-        }
-    }
-
-    // The last line cuts off so we push a line to the end,
-    // most likely imgquant issue on lua side.
-    for (let i = 0; i < dimensions[0]; i++)
-        colorArray.push(0);
-
-    // Compress the indexes to 4-bit buffer
-    const output = Buffer.alloc(colorArray.length / 2);
-    for (let i = 0; i < colorArray.length; i += 2)
-        output.writeUInt8(colorArray[i] << 4 | colorArray[i+1], i / 2);
-
-    return [ palette, output ];
-};
-
 // Load games at startup
 const games = getGames(path.join(process.cwd(), "roms"));
 console.info(`Loaded ${Object.keys(games).length} roms:`, Object.keys(games));
@@ -108,12 +51,12 @@ console.info(`Loaded ${Object.keys(games).length} roms:`, Object.keys(games));
 // app.get("/listGames", (_, res) =>
 //     res.send(serialize(Object.keys(games))));
 
-fastify.get('/listGames', async () =>
-    serialize(Object.keys(games)))
+fastify.get("/listGames", async () =>
+    serialize(Object.keys(games)));
 
 // Any API that does operations on the gameboy should be completely asynchronous and require a WS session
 fastify.register(async (fastify) => {
-    fastify.get('/*', { websocket: true }, (conn) => {
+    fastify.get("/*", { websocket: true }, (conn) => {
         console.info(`Client connected (${fastify.websocketServer.clients.size} online)`);
 
         const gameboy = new Gameboy();
@@ -124,7 +67,7 @@ fastify.register(async (fastify) => {
         // This is null util a game is running
         let intervalId = null;
 
-        conn.socket.on('message', (message: ws.RawData) => {
+        conn.socket.on("message", (message: ws.RawData) => {
             const [error, res] = useTry<any>(() => deserialize(message as any));
             if (error) return sendError(conn.socket, "Invalid data provided");
 
@@ -194,21 +137,21 @@ fastify.register(async (fastify) => {
                         })
                         .otherwise(() => console.warn("Caught invalid request:", res));
                 });
-        })
+        });
 
         conn.socket.on("close", () => {
             console.info(`Client disconnected (${fastify.websocketServer.clients.size} online)`);
             if (intervalId)
                 clearInterval(intervalId);
         });
-    })
+    });
 });
 
 fastify.listen({ port: parseInt(process.env.PORT, 10) }, err => {
     if (err) {
-        console.error(err)
-        process.exit(1)
+        console.error(err);
+        process.exit(1);
     }
 
     console.info(`Listening on http://localhost:${process.env.PORT}`);
-})
+});

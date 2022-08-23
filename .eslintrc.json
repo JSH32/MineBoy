@@ -13,6 +13,8 @@
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",
         "no-trailing-spaces": "error",
-        "indent": ["error", 4]
+        "indent": ["error", 4],
+        "semi": "error",
+        "quotes": "error"
     }
 }
