@@ -8,6 +8,8 @@
 ## Mineboy
 Mineboy is an open source gameboy emulator designed for ComputerCraft. It uses a streaming server and client because the lua runtime in CC is slow.
 
+[![MineBoy showcase video](https://img.youtube.com/vi/cBW4aGlNsOE/0.jpg)](https://www.youtube.com/watch?v=cBW4aGlNsOE)
+
 ## Install guide
 ### Server
 1. Install either [docker and docker compose](https://docs.docker.com/engine/install/) or [NodeJS](https://nodejs.org/en/)
