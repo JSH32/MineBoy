@@ -240,6 +240,16 @@ local function gameLoop()
                 if message.type == 'ERROR' then
                     -- Message we recieved was an error of some sort, log it
                     log.error(response.error)
+                elseif message.type == 'SAVE_DATA' then
+                    if diskDrive.isDiskPresent() then
+                        local savePath = diskDrive.getMountPath() .. '/mineboy/' .. message.gameName
+                        local handle = fs.open(savePath, 'w')
+                        handle.write(message.data)
+                        handle.close()
+                        if message.auto == false then
+                            log.info('Saved SRAM to: ' .. savePath)
+                        end
+                    end
                 elseif message.type == 'SCREEN_DRAW' then
                     blitFrame(message.width, message.height, message.palette, message.screen)
 
@@ -274,19 +284,6 @@ local function gameLoop()
                         ws.send(bson.encode({
                             type = 'GET_SAVE'
                         }))
-
-                        while true do
-                            local res = bson.decode(ws.receive())
-                            if res.type == 'SAVE_DATA' then
-                                local savePath = diskDrive.getMountPath() .. '/mineboy/' .. res.gameName
-                                local handle = fs.open(savePath, 'w')
-                                handle.write(res.data)
-                                handle.close()
-                                log.info('Saved SRAM to: ' .. savePath)
-                                break
-                            end
-                        end
-                        break -- Might have skipped events here since we nest the WS
                     end
                 end
             elseif event[1] == 'rednet_message' then
@@ -343,6 +340,7 @@ while true do
     ws.send(bson.encode({
         type = 'SELECT_GAME',
         index = index,
+        autoSave = config.autoSave,
         -- Don't send an empty save
         save = saveData
     }), true)

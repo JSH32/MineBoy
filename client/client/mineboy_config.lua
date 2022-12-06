@@ -7,6 +7,9 @@ return {
 	-- Disk drive ID or orientation for save files.
 	-- Saves are automatically loaded but not saved, you must press "s" in the terminal to copy save files.
 	diskDrive = '',
+	-- Should autosaves be enabled? Autosaves will discretely send over a save file for each modification of the save memory.
+	-- Manual saves can still be triggered at any moment but auto saves are more convenient.
+	autoSave = false,
 	-- Remote controller functionality, requires wireless modem.
 	rednet = false,
 	controlMonitor = {

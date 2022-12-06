@@ -59,7 +59,7 @@ fastify.register(async (fastify) => {
     });
 });
 
-fastify.listen({ host: '0.0.0.0', port: parseInt(process.env.PORT, 10) }, err => {
+fastify.listen({ host: "0.0.0.0", port: parseInt(process.env.PORT, 10) }, err => {
     if (err) {
         console.error(err);
         process.exit(1);

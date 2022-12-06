@@ -30,18 +30,44 @@ const sendError = (error: string) =>
 
 // We use a worker since the GameBoy emulation loop is not performant when using more than one emulator instance.
 parentPort.on("message", message => {
-    // parentPort.postMessage({num: data.num, fib: getFib(data.num)});
     const [error, res] = useTry<any>(() => deserialize(message as any));
     if (error) return sendError("Invalid data provided");
 
     match(res)
-        .with({ type: "SELECT_GAME", index: P.number, save: P.optional(P.any) }, async () => {
+        .with({ type: "SELECT_GAME", index: P.number, save: P.optional(P.any), autoSave: P.boolean }, async () => {
             if (res.index > workerData.games.length)
                 return sendError("Invalid game index selected");
 
             const saveData = res.save ? await promisify(zlib.inflate)(Buffer.from(res.save, "base64")) : undefined;
             gameName = Object.keys(workerData.games)[res.index];
             gameboy.loadRom(workerData.games[gameName], saveData);
+
+            // Serverboy is built like hot garbage and they feel the need to obfuscte anything stored on the gameboy
+            // behind a private object. This is a dumb hack because there is only one element in the public object.
+            // TODO: Replace this stupid shit with something else.
+            const gameboyPrivate = gameboy[Object.keys(gameboy)[0]].gameboy;
+
+            // Create a proxy listener for MBCRam
+            if (res.autoSave && gameboyPrivate.cBATT && gameboyPrivate.MBCRam.length != 0) {
+                const saveRam = gameboyPrivate.MBCRam;
+
+                // Set the internal ram to the proxy of the actual save array.
+                gameboyPrivate.MBCRam = new Proxy(saveRam, {
+                    set(target, property, value) {
+                        target[property] = value;
+                        // Send save when change made to MBC save ram.
+                        zlib.deflate(Buffer.from(saveRam), (_, buffer) => {
+                            parentPort.postMessage(serialize({
+                                type: "SAVE_DATA",
+                                gameName,
+                                auto: true,
+                                data: buffer.toString("base64")
+                            }));
+                        });
+                        return true;
+                    }
+                });
+            }
 
             if (!intervalId) {
                 intervalId = setInterval(() => {
@@ -81,6 +107,7 @@ parentPort.on("message", message => {
                         parentPort.postMessage(serialize({
                             type: "SAVE_DATA",
                             gameName,
+                            auto: false,
                             data: buffer.toString("base64")
                         }));
                     });

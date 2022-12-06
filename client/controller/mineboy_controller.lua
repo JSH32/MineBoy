@@ -22,9 +22,9 @@ while true do
 	term.setTextColor(colors.lightGray)
 	write('Mineboy computer ID: ')
 	term.setTextColor(colors.white)
-	computerID = tonumber(read())
+	computerId = tonumber(read())
 
-	if computerID == nil then
+	if computerId == nil then
 		term.setTextColor(colors.red)
 		print('Input must be a number')
 	else
@@ -49,7 +49,7 @@ local function showUi()
 	term.setTextColor(colors.cyan)
 	write('\nComputer ID: ')
 	term.setTextColor(colors.lightGray)
-	print(computerID)
+	print(computerId)
 	
 	term.setTextColor(colors.cyan)
 	write('Key Map: ')
@@ -92,7 +92,7 @@ while true do
 		end
 
 		if button ~= nil then
-			rednet.send(computerID, button, 'mineboy_input')
+			rednet.send(computerId, button, 'mineboy_input')
 		end
 	elseif event[1] == 'key_up' then
 		if event[2] == keys.x or event[2] == keys.leftCtrl then
