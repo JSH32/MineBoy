@@ -75,7 +75,7 @@ This connection is initiated as a websocket by [`attach`](#get-attach).
 **Response**: [`SCREEN_DRAW`](#screendraw)\
 **Example**:
 ```js
-{ "type": "PRESS_BUTTON" }
+{ "type": "EQUEST_DRAW" }
 ```
 
 ---
