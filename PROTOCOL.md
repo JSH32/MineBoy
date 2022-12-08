@@ -30,7 +30,8 @@ This connection is initiated as a websocket by [`attach`](#get-attach).
 {
 	"type": "SELECT_GAME",
 	"index": 0, // Index from listGames
-	"save": [] // Zlib compressed save data retrieved by GET_SAVE.
+	"save": [], // Zlib compressed save data retrieved by GET_SAVE.
+	"autoSave": true // Should the game listen for memory bank writing and send SAVE_DATA when save is triggered.
 }
 ```
 
@@ -114,7 +115,8 @@ This connection is initiated as a websocket by [`attach`](#get-attach).
 ```js
 { 
 	"type": "SAVE_DATA",
-	"data": [] // zlib compressed save data.
+	"data": [], // zlib compressed save data.
+	"auto": true // Is this save an autosave? Autosaves are sent without SAVE_DATA requests by the server.
 }
 ```
 
