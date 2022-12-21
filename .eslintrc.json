@@ -13,7 +13,7 @@
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",
         "no-trailing-spaces": "error",
-        "indent": ["error", 4],
+        "indent": ["error", 2],
         "semi": "error",
         "quotes": "error"
     },

@@ -21,11 +21,13 @@
   "dependencies": {
     "@fastify/websocket": "^7.0.0",
     "bson": "^4.6.3",
+    "chalk": "^4.1.2",
     "dotenv": "^16.0.0",
     "fastify": "^4.5.2",
     "no-try": "^3.1.0",
     "rgbquant": "^1.1.2",
     "serverboy": "^0.0.7",
+    "ts-log": "^2.2.5",
     "ts-node": "^10.9.1",
     "ts-pattern": "^4.0.2",
     "tslog": "^3.3.3",

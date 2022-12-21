@@ -3,6 +3,8 @@ return {
 	httpUrl = 'http://localhost:3000',
 	-- Socket Server URL.
 	wsUrl = 'ws://localhost:3000',
+	-- Leave this blank unless security policies are enabled on the server.
+	password = '',
 	screenMonitor = '',
 	-- Disk drive ID or orientation for save files.
 	-- Saves are automatically loaded but not saved, you must press "s" in the terminal to copy save files.

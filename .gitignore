@@ -3,3 +3,4 @@ dist
 roms
 yarn-error.log
 .vscode
+security.json

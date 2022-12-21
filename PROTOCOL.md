@@ -31,7 +31,7 @@ This connection is initiated as a websocket by [`attach`](#get-attach).
 	"type": "SELECT_GAME",
 	"index": 0, // Index from listGames
 	"save": [], // Zlib compressed save data retrieved by GET_SAVE.
-	"autoSave": true // Should the game listen for memory bank writing and send SAVE_DATA when save is triggered.
+	"autoSave": true // Should the game listen for memory bank writing and send SAVE_DATA when save is triggered (throttled by when last byte is written for 1 second).
 }
 ```
 

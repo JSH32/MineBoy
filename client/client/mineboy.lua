@@ -72,7 +72,7 @@ function tableLen(T)
     return count
 end
 
-local ws, err = http.websocket(config.wsUrl .. '/attach')
+local ws, err = http.websocket(config.wsUrl .. '/attach', { ["password"] = config.password })
 if err then
     log.error('Unable to open websocket: ' .. err)
     return
@@ -241,12 +241,14 @@ local function gameLoop()
                     -- Message we recieved was an error of some sort, log it
                     log.error(response.error)
                 elseif message.type == 'SAVE_DATA' then
-                    if diskDrive.isDiskPresent() then
+                    if diskDrive and diskDrive.isDiskPresent() then
                         local savePath = diskDrive.getMountPath() .. '/mineboy/' .. message.gameName
                         local handle = fs.open(savePath, 'w')
                         handle.write(message.data)
                         handle.close()
-                        if message.auto == false then
+                        if message.auto then
+                            log.info('Autosaved SRAM to: ' .. savePath)
+                        else
                             log.info('Saved SRAM to: ' .. savePath)
                         end
                     end
@@ -279,12 +281,10 @@ local function gameLoop()
                     return
                 end
 
-                if character == keys.s and diskDrive then
-                    if diskDrive.isDiskPresent() then
-                        ws.send(bson.encode({
-                            type = 'GET_SAVE'
-                        }))
-                    end
+                if character == keys.s and diskDrive and diskDrive.isDiskPresent() then
+                    ws.send(bson.encode({
+                        type = 'GET_SAVE'
+                    }))
                 end
             elseif event[1] == 'rednet_message' then
                 -- Protocol must be 'mineboy_input'
@@ -328,7 +328,7 @@ while true do
     end
 
     local saveData
-    if diskDrive.isDiskPresent() then
+    if diskDrive and diskDrive.isDiskPresent() then
         local savePath = diskDrive.getMountPath() .. '/mineboy/' .. gameList[tostring(index)]
         if fs.exists(savePath) then
             local handle = fs.open(savePath, 'r')
