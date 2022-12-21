@@ -38,7 +38,7 @@ if (process.env["SECURITY"] || fs.existsSync("./security.json")) {
   }
 }
 
-console.info(`Mineboy started${securityPolicies.length && ` with ${securityPolicies.length} security policies`}.`);
+console.info(`Mineboy started${securityPolicies.length ? ` with ${securityPolicies.length} security policies` : ""}.`);
 
 const fastify = Fastify();
 fastify.register(FastifyWebsocket);
