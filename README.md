@@ -15,7 +15,7 @@ Mineboy is an open source gameboy emulator designed for ComputerCraft. It uses a
 1. Install either [docker and docker compose](https://docs.docker.com/engine/install/) or [NodeJS](https://nodejs.org/en/)
 2. Clone this repository.
 3. Copy `.env.example` to `.env` and edit with proper config vars.
-    - If you are running Mineboy on a public server, you may want to secure the server with a password or prevent abuse from other players. Mineboy has a built-in security policy feature which can limit the number of connections. To use this feature, you must set the `SECURITY` environment variable to a value or fill the `security.json` file with the following information:
+    - If you are running Mineboy on a public server, you may want to secure the server with a password or prevent abuse from other players. Mineboy has a built-in security policy feature which can limit the number of connections. To use this feature, you must set the `SECURITY` environment variable or fill the `security.json` file with the following information:
       ```json
       [
         {
@@ -25,15 +25,15 @@ Mineboy is an open source gameboy emulator designed for ComputerCraft. It uses a
         }
       ]
       ```
-      This will ensure that only two connections are allowed using that password/policy at any given time. Additionally, if you set a password, only users who know the password will be able to connect to the server.
-1. Create `roms` folder with all GB/GBC roms.
-2. Run the script
+      This will ensure that only two connections are allowed using that password/policy at any given time. Additionally, if you set a password, only users who know the password will be able to connect to the server. If the security policy configuration is nonexistant or `[]` it will be unsecured.
+4. Create `roms` folder with all GB/GBC roms.
+5. Run the script
 	* For Node
 		* Run `npm install && npm build` to install dependencies.
 		* Run `node dist/index.js` to run.
 	* For Docker (proffered for headless)
 		* Run `docker-compose up -d`
-3. Edit all clients `mineboy_config.lua` files with proper `httpUrl` and `wsUrl` settings.
+6. Edit all clients `mineboy_config.lua` files with proper `httpUrl` and `wsUrl` settings.
 ### Client
 1. Run `pastebin run JubutEmL` and select the number with a `client`.
 2. Edit `mineboy_config.lua` with proper config options.
