@@ -1,5 +1,3 @@
-local pretty = require "cc.pretty"
-
 -- Key map, the left side is the keys you press on keyboard.
 -- These can be changed to any keys on this list https://computercraft.info/wiki/Keys_(API)
 local keyMap = {
@@ -41,20 +39,22 @@ local function showUi()
 	print('[MineBoy Controller]')
 	term.setBackgroundColor(colors.black)
 
-	local keyMapReadable = {}
-	for key, consoleKey in pairs(keyMap) do
-		keyMapReadable[keys.getName(key)] = consoleKey
-	end
-
 	term.setTextColor(colors.cyan)
 	write('\nComputer ID: ')
 	term.setTextColor(colors.lightGray)
 	print(computerId)
 	
 	term.setTextColor(colors.cyan)
-	write('Key Map: ')
+	write('Key Map: {\n')
 	term.setTextColor(colors.lightGray)
-	pretty.pretty_print(keyMapReadable)
+
+	for key, consoleKey in pairs(keyMap) do
+		term.setTextColor(colors.red)
+        write('  ' .. keys.getName(key))
+        term.setTextColor(colors.lightGray)
+        write(' - ' .. consoleKey .. '\n')
+	end
+	write('}\n')
 
 	term.setBackgroundColor(colors.cyan)
 	local w, h = term.getSize()
