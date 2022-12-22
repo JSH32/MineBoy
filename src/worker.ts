@@ -7,6 +7,7 @@ import zlib from "zlib";
 import { promisify } from "util";
 import { quantizeFrame } from "./utils";
 import { Logger } from "tslog";
+import chalk from "chalk";
 
 new Logger({
   name: `worker-${workerData.id}`,
@@ -109,7 +110,7 @@ parentPort.on("message", message => {
         }, 1000 / 120);
       }
 
-      console.info(`Client is playing ${gameName}`);
+      console.info(`Client is playing ${chalk.magenta(gameName)}`);
       sendClient({ type: "GAME_STARTED", name: gameName });
     })
     // Handler for other routes which require game to be running
@@ -122,7 +123,7 @@ parentPort.on("message", message => {
           clearInterval(intervalId);
           intervalId = null;
 
-          console.info(`Client has stopped playing ${gameName}`);
+          console.info(`Client has stopped playing ${chalk.magenta(gameName)}`);
           sendClient({ type: "GAME_EXITED" });
         })
         .with({ type: "GET_SAVE" }, () => {

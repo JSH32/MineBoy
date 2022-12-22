@@ -1,6 +1,35 @@
+-- MIT License
+--
+-- Copyright (c) 2021 JackMacWindows
+--
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+--
+-- The above copyright notice and this permission notice shall be included in all
+-- copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-- SOFTWARE.
+
+-- FROM: https://gist.github.com/MCJack123/e2a44c3bc80d5a151f0fb69756852019
+
 local expect = require "cc.expect".expect
 
 local imgquant = {}
+imgquant.defaultPalette = {}
+for i = 0, 15 do
+    local r, g, b = term.nativePaletteColor(2^i)
+    imgquant.defaultPalette[i+1] = {r * 255, g * 255, b * 255}
+end
 
 local names = {'r', 'g', 'b'}
 local function getComponent(c, n) return c[n] or c[names[n]] end

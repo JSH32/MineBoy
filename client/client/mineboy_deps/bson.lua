@@ -6,6 +6,8 @@
 -- See LICENSE for details.
 --
 
+-- FROM: https://github.com/tcoram/bson-lua
+
 function ppp(t, d, e)
 if e == nil then
 	e = ''
